@@ -1,348 +1,162 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>Golden Mean Swirl — Luminous Edition</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8">
+<title>Golden Ratio Consciousness Field — Luminous Edition</title>
 <style>
-  html,body { margin:0; height:100%; background:#000; overflow:hidden; font-family: sans-serif; }
-  #overlay { position:fixed; left:12px; top:12px; color:rgba(255,255,255,0.9); z-index:5; user-select:none; }
-  #credits { position:fixed; right:12px; bottom:12px; color:rgba(255,255,255,0.6); font-size:12px; }
-  canvas { display:block; width:100%; height:100%; }
-  a { color: #8fd; text-decoration:none; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: radial-gradient(ellipse at center, #000010 0%, #000000 100%);
+    color: white; font-family: monospace; text-align: center;
+  }
+  #title {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2em; letter-spacing: 2px;
+    color: rgba(255,255,255,0.85);
+    animation: fadeOut 5s ease-out forwards;
+  }
+  @keyframes fadeOut {
+    0% {opacity: 1;} 90% {opacity: 1;} 100% {opacity: 0; display: none;}
+  }
+  canvas { display: block; width: 100%; height: 100%; }
 </style>
-<!-- three.js r128 (non-module build) and postprocessing pieces from jsDelivr examples (non-module) -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-<div id="overlay">Golden Mean Swirl — Luminous Edition</div>
-<div id="credits">Made with φ, η &amp; light — tweak bloom &amp; density in the code.</div>
+<div id="title">Luminous Edition</div>
 <canvas id="c"></canvas>
-
 <script>
-/* ---------------------------
-   Utilities: sprite & mandala textures (canvas-generated)
-   --------------------------- */
-function createSprite(radius = 64, color = 'white') {
-  const size = radius * 2;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  // radial gradient
-  const g = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
-  g.addColorStop(0, 'rgba(255,255,255,1)');
-  g.addColorStop(0.15, color);
-  g.addColorStop(0.45, 'rgba(255,255,255,0.15)');
-  g.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.LinearMipMapLinearFilter;
-  return tex;
-}
-
-function createMandalaTexture(size = 512) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,size,size);
-  const cx = size/2, cy = size/2;
-  // background subtle
-  ctx.fillStyle = 'rgba(0,0,0,0)';
-  ctx.fillRect(0,0,size,size);
-  // rings: use phi-based radii
-  const φ = (1 + Math.sqrt(5))/2;
-  for (let i=0;i<8;i++){
-    const r = (Math.pow(φ, i*0.25) % (size*0.45)) + 6;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI*2);
-    ctx.strokeStyle = `rgba(255,255,255,${0.06 + 0.09*Math.sin(i*2.7)})`;
-    ctx.lineWidth = 1 + (i%2);
-    ctx.stroke();
-  }
-  // radial spokes (golden-angle spaced)
-  const goldenAngle = Math.PI*2/φ;
-  for (let i=0;i<60;i++){
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    const a = i * goldenAngle * 0.8;
-    ctx.lineTo(cx + Math.cos(a)*size*0.45, cy + Math.sin(a)*size*0.45);
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = 0.7;
-    ctx.stroke();
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.LinearMipMapLinearFilter;
-  return tex;
-}
-
-/* ---------------------------
-   Scene + renderer + camera (camera declared before resize usage)
-   --------------------------- */
-const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x000000);
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
-camera.position.set(0, 0, 120);
 
-/* Resize */
-let w, h;
-function resize(){
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x000010, 0.015);
+
+const camera = new THREE.PerspectiveCamera(
+  70,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
+camera.position.set(0, 0, 60);
+
+const φ = (1 + Math.sqrt(5)) / 2;
+const goldenAngle = Math.PI * 2 / φ;
+const eta = 0.809016994;
+const PhiStar = 1 / (4 * Math.PI * φ);
+
+const branchMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+const snowMaterial = new THREE.PointsMaterial({
+  color: 0xffffff,
+  size: 0.6,
+  transparent: true,
+  opacity: 0.85
+});
+
+let w = window.innerWidth, h = window.innerHeight;
+window.addEventListener("resize", () => {
   w = window.innerWidth; h = window.innerHeight;
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
-}
-resize();
-window.addEventListener('resize', resize);
-
-/* ---------------------------
-   Post-processing: bloom composer
-   --------------------------- */
-const composer = new THREE.EffectComposer(renderer);
-const renderPass = new THREE.RenderPass(scene, camera);
-composer.addPass(renderPass);
-
-const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.9, 0.6, 0.1);
-// Tunable: strength, radius, threshold
-bloomPass.threshold = 0.12;
-bloomPass.strength = 0.9;
-bloomPass.radius = 0.9;
-composer.addPass(bloomPass);
-
-/* ---------------------------
-   Global parameters & materials
-   --------------------------- */
-const φ = (1 + Math.sqrt(5))/2;
-const goldenAngle = Math.PI*2/φ;
-const eta = 0.809016994;
-const PhiStar = 1 / (4 * Math.PI * φ);
-
-const branchMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
-const branchGlowMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
-const smallSprite = createSprite(32, 'rgba(180,220,255,1)');
-const mandalaTex = createMandalaTexture(512);
-
-/* ---------------------------
-   Fog / particle atmosphere
-   --------------------------- */
-// A soft cloud of many subtle particles acts like volumetric fog
-const fogParticlesCount = 1200;
-const fogGeo = new THREE.BufferGeometry();
-const fogPositions = new Float32Array(fogParticlesCount * 3);
-const fogSizes = new Float32Array(fogParticlesCount);
-for (let i=0;i<fogParticlesCount;i++){
-  const r = 180 + Math.random()*240;
-  const theta = Math.random()*Math.PI*2;
-  const phiA = Math.acos((Math.random()*2)-1);
-  fogPositions[3*i] = Math.sin(phiA)*Math.cos(theta) * (50 + Math.random()*150);
-  fogPositions[3*i+1] = Math.sin(phiA)*Math.sin(theta) * (30 + Math.random()*100);
-  fogPositions[3*i+2] = Math.cos(phiA) * (50 + Math.random()*150);
-  fogSizes[i] = 2 + Math.random()*10;
-}
-fogGeo.setAttribute('position', new THREE.BufferAttribute(fogPositions, 3));
-fogGeo.setAttribute('size', new THREE.BufferAttribute(fogSizes, 1));
-const fogMat = new THREE.PointsMaterial({
-  map: createSprite(64, 'rgba(140,200,255,0.9)'),
-  transparent: true,
-  depthWrite: false,
-  opacity: 0.08,
-  sizeAttenuation: true,
-  blending: THREE.AdditiveBlending
 });
-const fogPoints = new THREE.Points(fogGeo, fogMat);
-scene.add(fogPoints);
 
-/* ---------------------------
-   Root + branching system (improved from your original)
-   --------------------------- */
-const root = new THREE.Object3D();
-scene.add(root);
-let maxLevels = 6;
-
-function createBranch(parent, level, maxLevelsLocal, length, angleOffset, time, idSeed=0) {
-  if (level > Math.floor(maxLevelsLocal)) return;
-
-  const segments = 32;
-  const positions = new Float32Array((segments+1)*3);
-  for (let i=0;i<=segments;i++){
-    const t = i/segments;
+function createBranch(parent, level, maxLevels, length, angleOffset, time) {
+  if (level > maxLevels) return;
+  const geometry = new THREE.BufferGeometry();
+  const vertices = [];
+  const numSegments = 20;
+  for (let i = 0; i <= numSegments; i++) {
+    const t = i / numSegments;
     const x = t * length * Math.cos(angleOffset + t * goldenAngle * eta);
     const y = t * length * Math.sin(angleOffset + t * goldenAngle * eta);
-    const z = t * length * 0.6; // soft depth
-    positions[3*i] = x;
-    positions[3*i+1] = y;
-    positions[3*i+2] = z;
+    const z = t * length;
+    vertices.push(x, y, z);
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  // line
-  const line = new THREE.Line(geo, branchMaterial.clone());
-  line.userData.level = level;
-  // subtle taper in opacity by depth
-  line.material.opacity = 0.85 - Math.min(0.6, level*0.08);
-  parent.add(line);
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  const branch = new THREE.Line(geometry, branchMaterial.clone());
+  parent.add(branch);
 
-  // attach a luminous particle set near the tip (snowflake)
-  const tipIdx = segments;
-  const tipPos = new THREE.Vector3(positions[3*tipIdx], positions[3*tipIdx+1], positions[3*tipIdx+2]);
+  // snowflakes at tip
+  const last = new THREE.Vector3(vertices[vertices.length - 3],
+                                 vertices[vertices.length - 2],
+                                 vertices[vertices.length - 1]);
   const snowGeo = new THREE.BufferGeometry();
-  const sCount = 28;
-  const sPos = new Float32Array(sCount*3);
-  const sSize = new Float32Array(sCount);
-  for (let s=0;s<sCount;s++){
-    const a = s * goldenAngle * (1 + 0.02*s);
-    const r = (level*1.2) + 1 + Math.pow(s, 0.8)*0.45;
-    sPos[3*s] = tipPos.x + Math.cos(a)*r;
-    sPos[3*s+1] = tipPos.y + Math.sin(a)*r;
-    sPos[3*s+2] = tipPos.z + (Math.sin(s*0.6 + level*0.3 + idSeed)*2);
-    sSize[s] = 2 + Math.random()*2;
+  const snowVerts = [];
+  const n = 40;
+  for (let i = 0; i < n; i++) {
+    const θ = i * goldenAngle;
+    const r = 0.5 + 0.5 * Math.random();
+    snowVerts.push(
+      last.x + r * Math.cos(θ),
+      last.y + r * Math.sin(θ),
+      last.z + 0.5 * (Math.random() - 0.5)
+    );
   }
-  snowGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-  snowGeo.setAttribute('size', new THREE.BufferAttribute(sSize, 1));
-  const snowMat = new THREE.PointsMaterial({
-    map: smallSprite,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    sizeAttenuation: true,
-    opacity: 0.85
-  });
-  const snowPoints = new THREE.Points(snowGeo, snowMat);
-  snowPoints.userData.tip = tipPos.clone();
-  parent.add(snowPoints);
+  snowGeo.setAttribute("position", new THREE.Float32BufferAttribute(snowVerts, 3));
+  const snow = new THREE.Points(snowGeo, snowMaterial.clone());
+  parent.add(snow);
 
-  // optional thin glow meshes near tip (adds to bloom)
-  const glowGeom = new THREE.CircleGeometry(Math.max(0.8, (1+level*0.5)), 16);
-  const glowMat = new THREE.MeshBasicMaterial({ map: smallSprite, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false });
-  const glow = new THREE.Mesh(glowGeom, glowMat);
-  glow.position.copy(tipPos);
-  glow.lookAt(camera.position);
-  glow.scale.set(1.0,1.0,1.0);
-  parent.add(glow);
-
-  // children
-  const childCount = Math.max(2, Math.floor(2 + PhiStar * 3)); // 2 or 3
-  for (let i=0;i<childCount;i++){
+  const childCount = 2 + Math.floor(PhiStar * 3);
+  for (let i = 0; i < childCount; i++) {
     const child = new THREE.Object3D();
-    // place child at tip and rotate
-    child.position.copy(tipPos);
-    child.rotation.z = (i - (childCount-1)/2) * 0.2 + angleOffset*0.03;
-    child.rotation.y = i * goldenAngle * 0.5;
+    child.position.set(length * Math.cos(angleOffset),
+                       length * Math.sin(angleOffset),
+                       length);
+    child.rotation.y = i * goldenAngle + time * 0.01;
     parent.add(child);
-    // recursive
-    createBranch(child, level+1, maxLevelsLocal, length * (1/φ) * (0.95 + Math.random()*0.12), angleOffset + goldenAngle * i * 0.08, time, idSeed + i*13);
+    createBranch(child, level + 1, maxLevels, length * (1 / φ),
+                 angleOffset + goldenAngle * i, time);
   }
 }
 
-/* initial generation */
-createBranch(root, 0, maxLevels, 24, 0, 0);
+const root = new THREE.Object3D();
+scene.add(root);
 
-/* Mandala planes that slowly rotate and scale */
-const mandalaCount = 6;
-const mandalaGroup = new THREE.Group();
-for (let i=0;i<mandalaCount;i++){
-  const size = 24 + i*12;
-  const mat = new THREE.MeshBasicMaterial({
-    map: mandalaTex,
-    transparent: true,
-    opacity: 0.06 + 0.02*i,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide
-  });
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
-  const ang = i * (Math.PI*2 / mandalaCount);
-  plane.position.set(Math.cos(ang)*35, Math.sin(ang)*20, -30 - i*8);
-  plane.rotation.set(0.2*i, ang*0.2, ang*0.4);
-  mandalaGroup.add(plane);
-}
-scene.add(mandalaGroup);
-
-/* subtle point light centers to accentuate bloom */
-const pLight = new THREE.PointLight(0xffffff, 0.7, 500);
-pLight.position.set(0, 0, 40);
-scene.add(pLight);
-
-/* ---------------------------
-   Animation loop (camera orbits, colors, fog motion)
-   --------------------------- */
 let t = 0;
+let maxLevels = 6;
+
 function animate() {
   requestAnimationFrame(animate);
+  t += 1;
 
-  // camera slow orbit
-  const radius = 90;
-  camera.position.x = Math.sin(t*0.0025) * radius;
-  camera.position.y = Math.cos(t*0.0021) * radius * 0.65;
-  camera.position.z = 50 + Math.sin(t*0.0018)*18;
-  camera.lookAt(new THREE.Vector3(0,0,8));
+  root.rotation.y += 0.01;
+  camera.position.x = Math.sin(t * 0.003) * 80;
+  camera.position.z = 60 + 10 * Math.sin(t * 0.001);
+  camera.lookAt(scene.position);
 
-  // rotate root slowly and mandalas with harmonic speeds
-  root.rotation.y += 0.0025 + 0.0006 * Math.sin(t*0.0007);
-  root.rotation.x = 0.02 * Math.sin(t*0.0005);
-  mandalaGroup.rotation.z += 0.0008;
-  mandalaGroup.children.forEach((m,i)=>{
-    m.rotation.z += 0.00065 * (1 + i*0.1) + 0.0003*Math.sin(t*0.0009*(i+1));
-    m.scale.setScalar(1 + 0.02*Math.sin(t*0.0007*(i+3)));
-  });
-
-  // animate fog subtly
-  const posAttr = fogGeo.attributes.position.array;
-  for (let i=0;i<fogParticlesCount;i++){
-    // gentle breathing
-    posAttr[3*i+1] += Math.sin((t*0.0002) + i)*0.01;
-    posAttr[3*i+2] += Math.cos((t*0.00015) + i*0.3)*0.01;
-  }
-  fogGeo.attributes.position.needsUpdate = true;
-
-  // traverse scene to update per-line color harmony and points
-  scene.traverse((obj) => {
-    if (obj.type === 'Line') {
-      const level = obj.userData.level || 0;
-      const hue = ((t*0.02) + (obj.position.z * 0.02) + level*10) % 360;
-      obj.material.color.setHSL((hue/360 + 0.12*Math.sin(t*0.0012)), 0.92 - level*0.06, 0.52 + 0.12*Math.sin(t*0.0009 + level*0.3));
+  scene.traverse(obj => {
+    if (obj.isLine) {
+      const hue = (t * 0.2 + obj.position.z * φ) % 360;
+      const color = new THREE.Color();
+      color.setHSL(hue / 360, 1, 0.5 + 0.2 * Math.sin(t * eta));
+      obj.material.color = color;
     }
-    if (obj.type === 'Points' && obj.material && obj.material.map === smallSprite) {
-      // snowflakes pulse
-      obj.material.opacity = 0.65 + 0.25*Math.sin(t*0.03 + obj.position.x*0.01);
-      obj.material.size = 1.8 + 0.6*Math.sin(t*0.02 + obj.position.y*0.01);
+    if (obj.isPoints) {
+      obj.rotation.z += 0.002;
+      obj.material.opacity = 0.7 + 0.3 * Math.sin(t * 0.01);
+      const hue = (t * 0.3) % 360;
+      const color = new THREE.Color();
+      color.setHSL(hue / 360, 1, 0.8);
+      obj.material.color = color;
     }
   });
 
-  // occasionally regenerate deeper for slow unfolding effect
-  if (t % 6000 === 0) {
-    // deepen a touch and re-seed new branches (kept gentle)
-    maxLevels = Math.min(10, maxLevels + 0.25);
-    // remove previous root children
-    while (root.children.length) root.remove(root.children[0]);
-    createBranch(root, 0, maxLevels, 24, (Math.random()-0.5)*0.2, t);
+  if (t % 200 === 0) {
+    root.clear();
+    createBranch(root, 0, maxLevels, 20, 0, t);
+    maxLevels += 0.05;
   }
 
-  // render with composer for bloom
-  composer.render();
-
-  t++;
+  renderer.render(scene, camera);
 }
+
+createBranch(root, 0, maxLevels, 20, 0, t);
 animate();
-
-/* ---------------------------
-   Quick UI tweak handlers (keyboard)
-   --------------------------- */
-window.addEventListener('keydown', (e)=>{
-  if (e.key === 'b') { bloomPass.strength = Math.max(0, bloomPass.strength - 0.1); }
-  if (e.key === 'B') { bloomPass.strength = Math.min(3, bloomPass.strength + 0.1); }
-  if (e.key === 'f') { fogMat.opacity = Math.max(0.01, fogMat.opacity - 0.01); }
-  if (e.key === 'F') { fogMat.opacity = Math.min(0.5, fogMat.opacity + 0.01); }
-});
-
 </script>
 </body>
 </html>
