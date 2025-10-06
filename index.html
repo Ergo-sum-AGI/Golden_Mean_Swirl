@@ -2,345 +2,304 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Golden Mean Swirl — Luminous, Living Edition</title>
+<title>Golden Mean Swirl — Living Edition (GitHub Safe)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-  html,body{height:100%;margin:0;background:#000011;overflow:hidden;font-family:Inter,system-ui,monospace}
+  html,body{height:100%;margin:0;background:#000010;overflow:hidden;font-family:Inter,system-ui,monospace;color:#dff}
+  canvas{display:block;width:100%;height:100%}
   #ui{
-    position:fixed; left:12px; top:12px; z-index:20; color:#dfe; background: rgba(0,0,0,0.28);
-    padding:10px; border-radius:8px; backdrop-filter: blur(6px);
-    width:290px; font-size:13px;
+    position:fixed; left:12px; top:12px; z-index:30; width:300px;
+    background:rgba(0,0,0,0.28); padding:12px; border-radius:10px; backdrop-filter: blur(6px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
   }
-  #ui h3{margin:0 0 6px 0; font-weight:600; color:#dff;}
+  #ui h3{margin:0 0 8px 0;color:#bde;font-size:15px}
   .row{display:flex;align-items:center;gap:8px;margin:6px 0}
-  .row input[type=range]{flex:1}
-  .row label{width:78px; color:#bcd}
-  .btn{background:#113; color:#dfe; border:1px solid rgba(255,255,255,0.06); padding:6px 8px;border-radius:6px; cursor:pointer}
-  #status{position:fixed; right:12px; bottom:12px; color:#9df; font-size:13px; background:rgba(0,0,0,0.28); padding:8px;border-radius:8px}
-  canvas{display:block}
-  #hint{position:fixed;right:12px;top:12px;color:#9df;opacity:0.9;font-size:12px}
+  .row label{width:86px;color:#9fd;font-size:13px}
+  input[type=range]{flex:1}
+  .btn{background:#0b2433;color:#cff;border-radius:6px;padding:6px 8px;border:1px solid rgba(255,255,255,0.04);cursor:pointer}
+  #status{position:fixed; right:12px; bottom:12px; z-index:30; background:rgba(0,0,0,0.28); padding:8px;border-radius:8px; color:#9df; font-size:13px}
+  #hint{position:fixed; right:12px; top:12px; color:#9df; font-size:12px; opacity:0.95}
+  .small{font-size:12px;color:#bcd}
+  hr{border:none;border-top:1px solid rgba(255,255,255,0.04);margin:8px 0}
 </style>
 
-<!-- three r128 + non-module postprocessing (UMD) -->
+<!-- Three + UMD helper scripts (r128) -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
 
-<!-- JSZip for frame packaging -->
+<!-- JSZip for packaging frames -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
 </head>
 <body>
 <div id="ui">
   <h3>Golden Mean — Controls</h3>
+
   <div class="row"><label>Bloom</label><input id="bloom" type="range" min="0" max="2" step="0.05" value="0.9"></div>
   <div class="row"><label>Radius</label><input id="bloomR" type="range" min="0" max="1.5" step="0.01" value="0.8"></div>
-  <div class="row"><label>Thresh</label><input id="bloomT" type="range" min="0" max="1" step="0.01" value="0.12"></div>
+  <div class="row"><label>Threshold</label><input id="bloomT" type="range" min="0" max="1" step="0.01" value="0.12"></div>
+
   <div class="row"><label>Fog</label><input id="fog" type="range" min="0.001" max="0.06" step="0.001" value="0.015"></div>
   <div class="row"><label>Complexity</label><input id="complex" type="range" min="3" max="12" step="0.25" value="6"></div>
+
   <div style="display:flex;gap:8px;margin-top:8px">
     <button id="regen" class="btn">Regenerate (r)</button>
     <button id="pause" class="btn">Pause (Space)</button>
   </div>
-  <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:8px 0"/>
-  <div style="font-size:12px;color:#9df">Recording (1080p)</div>
+
+  <hr/>
+
+  <div class="small">Recording (client-side frames → ZIP)</div>
   <div class="row"><label>FPS</label><input id="recFps" type="range" min="12" max="60" step="1" value="24"></div>
   <div class="row"><label>Seconds</label><input id="recSec" type="range" min="1" max="60" step="1" value="5"></div>
   <div style="display:flex;gap:8px;margin-top:6px">
     <button id="startRec" class="btn">Start Record</button>
     <button id="stopRec" class="btn">Cancel</button>
   </div>
-  <div style="margin-top:8px;font-size:12px;color:#bcd">Shortcuts: b/B bloom, f/F fog, r regen, Space pause</div>
+
+  <hr/>
+  <div class="small">Shortcuts: <strong>b/B</strong> bloom, <strong>f/F</strong> fog, <strong>r</strong> regen, <strong>Space</strong> pause</div>
 </div>
 
 <div id="status">Status: ready</div>
-<div id="hint">Tip: start with 120 frames then scale up</div>
+<div id="hint">Tip: try 5s @24fps first, then scale up</div>
 <canvas id="c"></canvas>
 
 <script>
 /* ---------------------------
-   Scene init (safe ordering)
+   Renderer, Scene, Camera, Composer (safe ordering)
    --------------------------- */
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
-const BASE_W = window.innerWidth, BASE_H = window.innerHeight;
-renderer.setSize(BASE_W, BASE_H);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const W0 = window.innerWidth, H0 = window.innerHeight;
+renderer.setSize(W0, H0);
 renderer.setClearColor(0x000010);
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x000010, 0.015);
 
-const camera = new THREE.PerspectiveCamera(60, BASE_W/BASE_H, 0.1, 2000);
-camera.position.set(0, 8, 110);
+const camera = new THREE.PerspectiveCamera(60, W0/H0, 0.1, 2000);
+camera.position.set(0, 12, 110);
 
-/* composer + bloom */
 const composer = new THREE.EffectComposer(renderer);
 const renderPass = new THREE.RenderPass(scene, camera);
 composer.addPass(renderPass);
-const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(BASE_W, BASE_H), 0.9, 0.6, 0.1);
+const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(W0, H0), 0.9, 0.6, 0.1);
 bloomPass.threshold = 0.12; bloomPass.strength = 0.9; bloomPass.radius = 0.9;
 composer.addPass(bloomPass);
 
 /* responsive */
-function onResize(w=window.innerWidth, h=window.innerHeight) {
-  renderer.setSize(w,h);
-  composer.setSize(w,h);
-  camera.aspect = w/h; camera.updateProjectionMatrix();
+function onResize(w = window.innerWidth, h = window.innerHeight) {
+  renderer.setSize(w, h);
+  composer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', ()=>onResize());
 
 /* constants */
-const φ = (1 + Math.sqrt(5)) / 2;
+const φ = (1 + Math.sqrt(5))/2;
 const goldenAngle = Math.PI*2/φ;
 const eta = 0.809016994;
 const PhiStar = 1/(4*Math.PI*φ);
 
-/* master groups */
+/* groups */
 const root = new THREE.Group(); scene.add(root);
 const mandalaGroup = new THREE.Group(); scene.add(mandalaGroup);
 
-/* materials */
-const filamentMat = new THREE.MeshStandardMaterial({ color:0xffffff, emissive:0x222244, roughness:0.3, metalness:0.05, side: THREE.DoubleSide });
-const filamentThinMat = new THREE.MeshStandardMaterial({ color:0xffffff, emissive:0x112244, roughness:0.5, metalness:0.02 });
-const snowMatBase = new THREE.PointsMaterial({ size: 2.2, vertexColors: true, transparent:true, opacity:0.95, depthWrite:false, blending:THREE.AdditiveBlending });
-const glowLight = new THREE.PointLight(0xffffff, 0.5, 400);
-glowLight.position.set(0,0,40); scene.add(glowLight);
+/* lights & materials */
+const ambient = new THREE.AmbientLight(0x334466, 0.7); scene.add(ambient);
+const point = new THREE.PointLight(0xffffff, 0.6, 400); point.position.set(0,0,50); scene.add(point);
 
-/* simple ambient */
-const amb = new THREE.AmbientLight(0x334466, 0.7); scene.add(amb);
+const filamentMat = new THREE.MeshStandardMaterial({ color:0xffffff, emissive:0x202244, roughness:0.28, metalness:0.06, side:THREE.DoubleSide });
+const filamentThinMat = new THREE.MeshStandardMaterial({ color:0xffffff, emissive:0x112244, roughness:0.44, metalness:0.02 });
 
-/* utility: create tube from points */
-function makeTubeFromPoints(points, radius=0.7, radialSegments=6) {
-  // CatmullRom smooth curve
+/* snow particle material (heads) */
+const headMat = new THREE.PointsMaterial({ size: 2.2, vertexColors: true, transparent:true, opacity:0.95, depthWrite:false, blending:THREE.AdditiveBlending });
+
+/* helper: tube geometry from 3D points */
+function makeTubeFromPoints(points, radius=0.8, radialSegments=6) {
   const curve = new THREE.CatmullRomCurve3(points);
-  const tubularSegments = Math.max(8, Math.floor(points.length*6));
-  const geometry = new THREE.TubeBufferGeometry(curve, tubularSegments, radius, radialSegments, false);
-  return geometry;
+  const tubularSegments = Math.max(24, Math.floor(points.length*8));
+  return new THREE.TubeBufferGeometry(curve, tubularSegments, radius, radialSegments, false);
 }
 
-/* snowflake particle class (with trail) */
+/* ---------------------------
+   Snow system (moving heads + trails)
+   --------------------------- */
 class Snow {
   constructor(pos, hue, speedScale=1) {
     this.pos = pos.clone();
-    this.vel = new THREE.Vector3((Math.random()-0.5)*0.15*speedScale, (Math.random()-0.5)*0.15*speedScale, (Math.random()-0.5)*0.15*speedScale);
+    this.vel = new THREE.Vector3((Math.random()-0.5)*0.2*speedScale, (Math.random()-0.5)*0.2*speedScale, (Math.random()-0.5)*0.2*speedScale);
     this.hue = hue;
-    this.hueSpeed = (0.2 + Math.random()*0.8) * (Math.random()>0.5?1:-1);
-    this.size = 1 + Math.random()*2;
+    this.hueSpeed = (0.6 + Math.random()*1.2) * (Math.random()>0.5?1:-1);
     this.age = 0;
-    // trail: keep N previous positions
-    this.trailLen = 10;
+    this.trailLen = 12;
     this.trail = [];
     for (let i=0;i<this.trailLen;i++) this.trail.push(this.pos.clone());
   }
   step(dt) {
-    // swirl force around Y axis and slight radial attraction to origin for coherent swirling
+    // swirl force + noise + gentle attraction toward center
     const swirl = new THREE.Vector3(-this.pos.z, 0, this.pos.x).normalize().multiplyScalar(0.02);
     const noise = new THREE.Vector3((Math.random()-0.5)*0.02, (Math.random()-0.5)*0.02, (Math.random()-0.5)*0.02);
-    this.vel.add(swirl).add(noise);
-    // slight damping
+    const attract = this.pos.clone().multiplyScalar(-0.0008);
+    this.vel.add(swirl).add(noise).add(attract);
     this.vel.multiplyScalar(0.995);
     this.pos.add(this.vel.clone().multiplyScalar(dt));
-    // update trail
-    this.trail.pop();
-    this.trail.unshift(this.pos.clone());
-    // hue
+    this.trail.pop(); this.trail.unshift(this.pos.clone());
     this.hue = (this.hue + this.hueSpeed * 0.2) % 360;
     this.age += dt;
   }
 }
 
-/* particle system for snowflakes with trails */
 class SnowSystem {
   constructor() {
-    this.snowList = [];
-    // points geometry for heads
+    this.list = [];
     this.headGeo = new THREE.BufferGeometry();
-    this.headPositions = new Float32Array(0);
-    this.headColors = new Float32Array(0);
-    this.headPoints = new THREE.Points(this.headGeo, snowMatBase.clone());
+    this.headPoints = new THREE.Points(this.headGeo, headMat.clone());
     this.headPoints.frustumCulled = false;
     scene.add(this.headPoints);
-    // trails (dynamic lines) - we'll maintain an array of Line objects
-    this.trailLines = [];
-    this.maxTrails = 120; // cap
+    this.trails = []; // array of Lines
+    this.maxTrails = 160;
   }
 
   emit(pos, hue, scale=1) {
     const s = new Snow(pos, hue, scale);
-    this.snowList.push(s);
-    // limit growth
-    if (this.snowList.length > 800) this.snowList.shift();
-    this._rebuildHeadBuffers();
-    // maybe create trail line
-    if (this.trailLines.length < this.maxTrails) {
-      const trailGeom = new THREE.BufferGeometry();
-      const P = s.trailLen;
-      const trailPos = new Float32Array(P*3);
-      trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPos,3));
-      const trailMat = new THREE.LineBasicMaterial({ linewidth:1, transparent:true, opacity:0.45, vertexColors:false });
-      const line = new THREE.Line(trailGeom, trailMat);
+    this.list.push(s);
+    if (this.list.length > 900) this.list.shift();
+    this._rebuildHeads();
+    if (this.trails.length < this.maxTrails) {
+      const g = new THREE.BufferGeometry();
+      const arr = new Float32Array(s.trailLen*3);
+      g.setAttribute('position', new THREE.BufferAttribute(arr,3));
+      const mat = new THREE.LineBasicMaterial({ color:0xffffff, transparent:true, opacity:0.38, linewidth:1 });
+      const line = new THREE.Line(g, mat);
       line.userData.source = s;
       scene.add(line);
-      this.trailLines.push(line);
+      this.trails.push(line);
     }
   }
 
-  _rebuildHeadBuffers() {
-    const n = this.snowList.length;
-    this.headPositions = new Float32Array(n*3);
-    this.headColors = new Float32Array(n*3);
+  _rebuildHeads() {
+    const n = this.list.length;
+    this.positions = new Float32Array(n*3);
+    this.colors = new Float32Array(n*3);
     for (let i=0;i<n;i++){
-      const s = this.snowList[i];
-      this.headPositions[3*i]=s.pos.x; this.headPositions[3*i+1]=s.pos.y; this.headPositions[3*i+2]=s.pos.z;
-      const col = new THREE.Color().setHSL((s.hue/360)%1, 0.9, 0.7);
-      this.headColors[3*i]=col.r; this.headColors[3*i+1]=col.g; this.headColors[3*i+2]=col.b;
+      const s = this.list[i];
+      this.positions[3*i]=s.pos.x; this.positions[3*i+1]=s.pos.y; this.positions[3*i+2]=s.pos.z;
+      const c = new THREE.Color().setHSL((s.hue/360)%1, 0.9, 0.68);
+      this.colors[3*i]=c.r; this.colors[3*i+1]=c.g; this.colors[3*i+2]=c.b;
     }
-    this.headGeo.setAttribute('position', new THREE.BufferAttribute(this.headPositions,3));
-    this.headGeo.setAttribute('color', new THREE.BufferAttribute(this.headColors,3));
+    this.headGeo.setAttribute('position', new THREE.BufferAttribute(this.positions,3));
+    this.headGeo.setAttribute('color', new THREE.BufferAttribute(this.colors,3));
     this.headGeo.attributes.position.needsUpdate = true;
     this.headGeo.attributes.color.needsUpdate = true;
     this.headPoints.geometry = this.headGeo;
-    this.headPoints.material.size = 1.6;
   }
 
   step(dt) {
-    // step all snow
-    for (let i=0;i<this.snowList.length;i++){
-      const s = this.snowList[i];
-      s.step(dt);
-    }
+    for (let s of this.list) s.step(dt);
     // update head buffer
-    const n = this.snowList.length;
-    if (n>0) {
-      for (let i=0;i<n;i++){
-        const s = this.snowList[i];
-        this.headPositions[3*i]=s.pos.x; this.headPositions[3*i+1]=s.pos.y; this.headPositions[3*i+2]=s.pos.z;
-        const col = new THREE.Color().setHSL((s.hue/360)%1, 0.9, 0.7);
-        this.headColors[3*i]=col.r; this.headColors[3*i+1]=col.g; this.headColors[3*i+2]=col.b;
-      }
+    for (let i=0;i<this.list.length;i++){
+      const s = this.list[i];
+      this.positions[3*i]=s.pos.x; this.positions[3*i+1]=s.pos.y; this.positions[3*i+2]=s.pos.z;
+      const c = new THREE.Color().setHSL((s.hue/360)%1, 0.9, 0.68);
+      this.colors[3*i]=c.r; this.colors[3*i+1]=c.g; this.colors[3*i+2]=c.b;
+    }
+    if (this.headGeo.attributes.position) {
       this.headGeo.attributes.position.needsUpdate = true;
       this.headGeo.attributes.color.needsUpdate = true;
     }
-    // update trails
-    for (let i=0;i<this.trailLines.length;i++){
-      const line = this.trailLines[i];
+    // trails update
+    for (let i=0;i<this.trails.length;i++){
+      const line = this.trails[i];
       const s = line.userData.source;
-      const posAttr = line.geometry.attributes.position.array;
+      const arr = line.geometry.attributes.position.array;
       for (let j=0;j<s.trailLen;j++){
         const p = s.trail[j];
-        posAttr[3*j] = p.x; posAttr[3*j+1]=p.y; posAttr[3*j+2]=p.z;
+        arr[3*j]=p.x; arr[3*j+1]=p.y; arr[3*j+2]=p.z;
       }
       line.geometry.attributes.position.needsUpdate = true;
-      // fade older trails slowly
-      line.material.opacity = 0.12 + Math.max(0, 0.3 - s.age*0.002);
-      // if the source snow is too old, remove
-      if (s.age > 60 && Math.random()>0.995) {
-        scene.remove(line); this.trailLines.splice(i,1); i--;
+      line.material.opacity = 0.06 + Math.max(0, 0.4 - s.age*0.004);
+      if (s.age > 90 && Math.random()>0.996) {
+        scene.remove(line);
+        this.trails.splice(i,1); i--;
       }
     }
   }
 }
-
 const snowSys = new SnowSystem();
 
 /* ---------------------------
-   Branching: produce tube filaments and seed snow at tips
-   returns array of tip positions to emit snow from
+   Branches -> Tube filaments & tip collection
    --------------------------- */
-function createBranchTree(container, maxLevels, baseLen=26) {
+function createTree(container, maxLevels, baseLen=28) {
   // clear previous
   while (container.children.length) {
-    const c = container.children[0];
-    container.remove(c);
-    if (c.geometry) c.geometry.dispose();
-    if (c.material) { if (Array.isArray(c.material)) c.material.forEach(m=>m.dispose()); else c.material.dispose(); }
+    const ch = container.children[0];
+    container.remove(ch);
+    if (ch.geometry) ch.geometry.dispose();
+    if (ch.material) { if (Array.isArray(ch.material)) ch.material.forEach(m=>m.dispose()); else ch.material.dispose(); }
   }
-
   const tips = [];
-  function recurse(parentPos, level, angleOffset, seedId=0) {
+  function recurse(parentPos, level, angleOffset, seed=0) {
     if (level > Math.floor(maxLevels)) return;
-    const length = baseLen * Math.pow(1/φ, level) * (0.9 + Math.random()*0.15);
-    const segments = 20;
-    const points = [];
-    for (let i=0;i<=segments;i++){
-      const t = i/segments;
-      const x = parentPos.x + t*length*Math.cos(angleOffset + t*goldenAngle*eta + seedId*0.01);
-      const y = parentPos.y + t*length*Math.sin(angleOffset + t*goldenAngle*eta + seedId*0.01);
-      const z = parentPos.z + t*length*0.7 + level*1.1;
-      points.push(new THREE.Vector3(x,y,z));
+    const length = baseLen * Math.pow(1/φ, level) * (0.88 + Math.random()*0.24);
+    const seg = 20;
+    const pts = [];
+    for (let i=0;i<=seg;i++){
+      const t = i/seg;
+      const x = parentPos.x + t*length*Math.cos(angleOffset + t*goldenAngle*eta + seed*0.01);
+      const y = parentPos.y + t*length*Math.sin(angleOffset + t*goldenAngle*eta + seed*0.01);
+      const z = parentPos.z + t*length*0.7 + level*1.3;
+      pts.push(new THREE.Vector3(x,y,z));
     }
-    // tube geometry from points
-    const tubeGeo = makeTubeFromPoints(points, Math.max(0.6, 1.2 - level*0.12), 8);
+    const geo = makeTubeFromPoints(pts, Math.max(0.5, 1.2 - level*0.12), 10);
     const mat = (level < 2) ? filamentMat.clone() : filamentThinMat.clone();
     mat.emissive = new THREE.Color(0x202244).multiplyScalar(1 + level*0.02);
-    const mesh = new THREE.Mesh(tubeGeo, mat);
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.userData.level = level;
-    mesh.userData.baseHue = (level*22 + seedId*11) % 360;
+    mesh.userData.baseHue = (level*20 + seed*13) % 360;
     container.add(mesh);
+    tips.push(pts[pts.length-1].clone());
 
-    // store tip
-    tips.push(points[points.length-1].clone());
-
-    // children
     const childCount = 2 + Math.floor(PhiStar*3);
     for (let i=0;i<childCount;i++){
       const ang = angleOffset + (i - (childCount-1)/2) * (0.8 + Math.random()*0.6);
-      recurse(points[points.length-1], level+1, ang, seedId + i*7);
+      recurse(pts[pts.length-1], level+1, ang, seed + i*7);
     }
   }
-  recurse(new THREE.Vector3(0, -6, 0), 0, 0, Math.floor(Math.random()*9999));
+  recurse(new THREE.Vector3(0,-6,0), 0, 0, Math.floor(Math.random()*9999));
   return tips;
 }
 
-/* initial generation */
-let complexity = 6;
-let tips = createBranchTree(root, complexity);
-
-/* spawn a few snowflakes from tips */
-function seedSnowFromTips(cnt=2) {
-  for (let i=0;i<tips.length;i++){
-    if (Math.random() < 0.02*cnt) {
-      const p = tips[i].clone();
-      const hue = (Math.random()*360);
-      snowSys.emit(p, hue, 1 + Math.random()*0.6);
-    }
-  }
-}
-
-/* mandala planes for background depth */
+/* mandalas */
 function createMandalas() {
-  // clear
   while (mandalaGroup.children.length) mandalaGroup.remove(mandalaGroup.children[0]);
-  const base = 28;
   for (let i=0;i<6;i++){
-    const size = base + i*18;
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 512;
-    const ctx = canvas.getContext('2d');
+    const size = 28 + i*16;
+    const cvs = document.createElement('canvas');
+    cvs.width = cvs.height = 512;
+    const ctx = cvs.getContext('2d');
     ctx.translate(256,256);
-    // subtle rings
     for (let r=0;r<8;r++){
-      ctx.beginPath();
-      ctx.lineWidth = 1 + (r%2);
+      ctx.beginPath(); ctx.lineWidth = 1 + (r%2);
       ctx.strokeStyle = `rgba(210,230,255,${0.02 + 0.02*Math.sin(i+r)})`;
-      ctx.arc(0,0,10 + r*(size/8),0,Math.PI*2);
-      ctx.stroke();
+      ctx.arc(0,0,10 + r*(size/8),0,Math.PI*2); ctx.stroke();
     }
-    // spokes
     for (let s=0;s<48;s++){
-      const a = s*goldenAngle*0.6;
-      ctx.beginPath();
-      ctx.moveTo(0,0);
-      ctx.lineTo(Math.cos(a)*(size*1.6), Math.sin(a)*(size*1.6));
-      ctx.strokeStyle = 'rgba(210,230,255,0.02)';
-      ctx.stroke();
+      const a = s * goldenAngle * 0.6;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*(size*1.6), Math.sin(a)*(size*1.6));
+      ctx.strokeStyle = 'rgba(210,230,255,0.02)'; ctx.stroke();
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent:true, opacity:0.04, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide });
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
+    const tex = new THREE.CanvasTexture(cvs);
+    const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, opacity:0.04, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(size,size), mat);
     plane.position.set(Math.cos(i*1.2)*38, Math.sin(i*0.8)*16, -30 - i*9);
     plane.rotation.set(0.22*i, i*0.12, i*0.18);
     mandalaGroup.add(plane);
@@ -348,77 +307,89 @@ function createMandalas() {
 }
 createMandalas();
 
-/* animation loop */
+/* initial generation */
+let complexity = parseFloat(document.getElementById('complex').value) || 6;
+let tips = createTree(root, complexity);
+
+/* emit helpers */
+function seedSnowFromTips(chance=0.02) {
+  for (let i=0;i<tips.length;i++){
+    if (Math.random() < chance) {
+      snowSys.emit(tips[i], Math.random()*360, 0.9 + Math.random()*1.4);
+    }
+  }
+}
+
+/* ---------------------------
+   Animation loop: all moves (panta rhei)
+   --------------------------- */
 let paused = false;
-let frame = 0, lastTime = performance.now();
+let frame = 0;
+let last = performance.now();
 function animate(now) {
   requestAnimationFrame(animate);
-  const dt = Math.min(0.05, (now - lastTime)/1000);
-  lastTime = now;
   if (paused && !isRecording) return;
+  const dt = Math.min(0.05, (now - last)/1000);
+  last = now;
 
-  // orbit camera gently
   const t = performance.now();
   camera.position.x = Math.sin(t*0.0008)*110;
   camera.position.y = Math.cos(t*0.0007)*54;
   camera.position.z = 40 + Math.sin(t*0.0012)*28;
   camera.lookAt(0,0,6);
 
-  // root subtle rotation
   root.rotation.y += 0.0012;
-  root.rotation.x = 0.02*Math.sin(t*0.0006);
+  root.rotation.x = 0.02 * Math.sin(t*0.0006);
   mandalaGroup.rotation.z += 0.0005;
 
-  // per-filament shimmer color
+  // filament colors and subtle breathing
   root.children.forEach(obj=>{
     if (obj.isMesh) {
-      const level = obj.userData.level || 0;
+      const lev = obj.userData.level || 0;
       const hue = ((frame*0.03) + obj.userData.baseHue) % 360;
-      obj.material.color.setHSL((hue/360)+0.02*Math.sin(frame*0.001), 0.8 - level*0.04, 0.46 + 0.06*Math.sin(frame*0.0009 + level));
-      obj.material.emissiveIntensity = 0.8 + 0.2*Math.sin(frame*0.002 + level);
+      obj.material.color.setHSL((hue/360) + 0.02*Math.sin(frame*0.001), 0.78 - lev*0.04, 0.44 + 0.06*Math.sin(frame*0.0009 + lev));
+      // slight emissive pulsing
+      obj.material.emissiveIntensity = 0.8 + 0.28*Math.sin(frame*0.002 + lev);
+      // wobble geometry by tiny rotation
+      obj.rotation.z = 0.002 * Math.sin(frame*0.0009 + lev*0.1);
     }
   });
 
-  // spawn or multiply snow
-  if (Math.random() < 0.45) seedSnowFromTips(3);
-  // sometimes create burst
+  // snow: spawn, step, trails
+  if (Math.random() < 0.5) seedSnowFromTips(0.02 + (complexity-6)*0.002);
   if (Math.random() < 0.003) {
     const idx = Math.floor(Math.random()*tips.length);
-    snowSys.emit(tips[idx], Math.random()*360, 1.6 + Math.random()*1.4);
-    // spawn a small cloud
-    for (let i=0;i<8;i++) snowSys.emit(tips[idx], Math.random()*360, 0.9 + Math.random()*0.9);
+    snowSys.emit(tips[idx], Math.random()*360, 1.4 + Math.random()*1.8);
+    for (let i=0;i<6;i++) snowSys.emit(tips[idx], Math.random()*360, 0.8 + Math.random()*1.2);
   }
+  snowSys.step(Math.max(0.6, dt*60));
 
-  // step snow system
-  snowSys.step(Math.max(0.8, dt*60));
-
-  // update fog density from UI
   scene.fog.density = parseFloat(document.getElementById('fog').value);
 
-  // render via composer (bloom)
   composer.render();
 
   frame++;
 }
-
-/* start loop */
 requestAnimationFrame(animate);
 
 /* ---------------------------
-   UI bindings & hotkeys
+   UI bindings & shortcuts
    --------------------------- */
-document.getElementById('bloom').addEventListener('input', e=>{ bloomPass.strength = parseFloat(e.target.value); });
-document.getElementById('bloomR').addEventListener('input', e=>{ bloomPass.radius = parseFloat(e.target.value); });
-document.getElementById('bloomT').addEventListener('input', e=>{ bloomPass.threshold = parseFloat(e.target.value); });
-document.getElementById('fog').addEventListener('input', e=>{ scene.fog.density = parseFloat(e.target.value); });
+const statusEl = document.getElementById('status');
+document.getElementById('bloom').addEventListener('input', e=>{ bloomPass.strength = parseFloat(e.target.value); statusEl.innerText = `Status: bloom ${bloomPass.strength.toFixed(2)}`; });
+document.getElementById('bloomR').addEventListener('input', e=>{ bloomPass.radius = parseFloat(e.target.value); statusEl.innerText = `Status: bloom radius ${bloomPass.radius.toFixed(2)}`; });
+document.getElementById('bloomT').addEventListener('input', e=>{ bloomPass.threshold = parseFloat(e.target.value); statusEl.innerText = `Status: bloom threshold ${bloomPass.threshold.toFixed(2)}`; });
+
+document.getElementById('fog').addEventListener('input', e=>{ scene.fog.density = parseFloat(e.target.value); statusEl.innerText = `Status: fog ${scene.fog.density.toFixed(3)}`; });
+
 document.getElementById('complex').addEventListener('input', e=>{
   complexity = parseFloat(e.target.value);
-  document.getElementById('status').innerText = `Status: complexity set ${complexity.toFixed(2)}`;
+  statusEl.innerText = `Status: complexity set ${complexity.toFixed(2)}`;
 });
 
 document.getElementById('regen').addEventListener('click', ()=>{
-  tips = createBranchTree(root, complexity);
-  document.getElementById('status').innerText = `Status: regenerated – tips ${tips.length}`;
+  tips = createTree(root, complexity);
+  statusEl.innerText = `Status: regenerated — tips ${tips.length}`;
 });
 
 document.getElementById('pause').addEventListener('click', ()=>{
@@ -426,23 +397,20 @@ document.getElementById('pause').addEventListener('click', ()=>{
   document.getElementById('pause').innerText = paused ? 'Resume (Space)' : 'Pause (Space)';
 });
 
-/* keyboard shortcuts */
-window.addEventListener('keydown', (e)=>{
-  if (e.key === 'b') bloomPass.strength = Math.max(0, bloomPass.strength - 0.08);
-  if (e.key === 'B') bloomPass.strength = Math.min(3, bloomPass.strength + 0.08);
-  if (e.key === 'f') scene.fog.density = Math.max(0.0005, scene.fog.density - 0.002);
-  if (e.key === 'F') scene.fog.density = Math.min(0.2, scene.fog.density + 0.002);
-  if (e.key === 'r') { tips = createBranchTree(root, complexity); document.getElementById('status').innerText = 'Status: regenerated'; }
-  if (e.code === 'Space') { paused = !paused; document.getElementById('pause').innerText = paused ? 'Resume (Space)' : 'Pause (Space)'; }
+window.addEventListener('keydown', (ev)=>{
+  if (ev.key === 'b') bloomPass.strength = Math.max(0, bloomPass.strength - 0.08);
+  if (ev.key === 'B') bloomPass.strength = Math.min(3, bloomPass.strength + 0.08);
+  if (ev.key === 'f') scene.fog.density = Math.max(0.0005, scene.fog.density - 0.002);
+  if (ev.key === 'F') scene.fog.density = Math.min(0.2, scene.fog.density + 0.002);
+  if (ev.key === 'r') { tips = createTree(root, complexity); statusEl.innerText = `Status: regenerated — tips ${tips.length}`; }
+  if (ev.code === 'Space') { paused = !paused; document.getElementById('pause').innerText = paused ? 'Resume (Space)' : 'Pause (Space)'; }
 });
 
 /* ---------------------------
-   Recording (1080p) — client-side frames -> zip
+   Recording: client-side 1080p frames -> ZIP (JSZip)
    --------------------------- */
 const startBtn = document.getElementById('startRec');
 const stopBtn = document.getElementById('stopRec');
-const statusEl = document.getElementById('status');
-
 let isRecording = false;
 let recorded = [];
 
@@ -453,60 +421,49 @@ async function startRecording() {
   if (isRecording) return;
   const fps = parseInt(document.getElementById('recFps').value,10);
   const seconds = parseInt(document.getElementById('recSec').value,10);
-  const totalFrames = Math.max(1, fps * seconds);
-  statusEl.innerText = `Status: recording ${totalFrames} frames @ ${fps}fps`;
+  const total = Math.max(1, fps * seconds);
+  statusEl.innerText = `Status: recording ${total} frames @${fps}fps`;
   isRecording = true;
   recorded = [];
-  paused = false; // ensure loop runs while recording
 
-  // Save current size to restore
+  // Save old state
   const oldW = renderer.domElement.width, oldH = renderer.domElement.height;
-  const oldStyleW = renderer.domElement.style.width, oldStyleH = renderer.domElement.style.height;
-  const oldPixelRatio = renderer.getPixelRatio();
+  const oldPR = renderer.getPixelRatio();
 
-  // render at 1080p for capture
+  // Render at 1080p
   const TARGET_W = 1920, TARGET_H = 1080;
   onResize(TARGET_W, TARGET_H);
   renderer.setPixelRatio(1);
+  composer.setSize(TARGET_W, TARGET_H);
 
-  // We'll capture frames synchronously by advancing the scene as if running in steps
-  for (let f=0; f<totalFrames; f++){
-    // advance animation logic by simulated delta (1/fps)
-    // call small-step render frame: we want the scene to evolve consistently,
-    // so we manually run a simplified update similar to animate loop:
-    updateForCaptureFrame(1000/60); // keep time stepping approx same behavior
-    // render to canvas via composer
+  for (let f=0; f<total; f++) {
+    // advance scene deterministic-ish
+    updateForCaptureFrame(1000/fps);
     composer.render();
-    // read data URL
-    const dataURL = renderer.domElement.toDataURL('image/png');
-    recorded.push(dataURL);
-    statusEl.innerText = `Status: recorded ${f+1}/${totalFrames}`;
-    await new Promise(r=>setTimeout(r, 10)); // small yield to keep UI responsive
-    if (!isRecording) break; // allow cancellation
+    // capture
+    const data = renderer.domElement.toDataURL('image/png');
+    recorded.push(data);
+    statusEl.innerText = `Status: recorded ${f+1}/${total}`;
+    await new Promise(r=>setTimeout(r, 6)); // yield
+    if (!isRecording) break;
   }
 
-  // restore sizes
-  onResize(BASE_W, BASE_H);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
-  // package zip
+  // restore
+  onResize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  composer.setSize(window.innerWidth, window.innerHeight);
+
   statusEl.innerText = `Status: packing ${recorded.length} frames…`;
   await packZip(recorded);
   isRecording = false;
-  statusEl.innerText = `Status: ready`;
+  statusEl.innerText = 'Status: ready';
 }
 
-function cancelRecording() {
-  if (!isRecording) return;
-  isRecording = false;
-  recorded = [];
-  statusEl.innerText = 'Status: recording canceled';
-}
+function cancelRecording(){ if (!isRecording) return; isRecording=false; recorded=[]; statusEl.innerText='Status: recording canceled'; }
 
-/* helper to advance internal state reliably for capture */
 function updateForCaptureFrame(dtMs) {
-  // mirror logic in animate but deterministic-ish
+  // mirror animate steps so frames are coherent
   const dt = Math.min(0.05, dtMs/1000);
-  // modest orbit advance
   const t = performance.now();
   camera.position.x = Math.sin(t*0.0008)*110;
   camera.position.y = Math.cos(t*0.0007)*54;
@@ -514,26 +471,23 @@ function updateForCaptureFrame(dtMs) {
   camera.lookAt(0,0,6);
   root.rotation.y += 0.0012;
   mandalaGroup.rotation.z += 0.0005;
-  // color advance
-  root.children.forEach((obj, idx)=>{
+  root.children.forEach(obj=>{
     if (obj.isMesh) {
-      const level = obj.userData.level || 0;
+      const lev = obj.userData.level || 0;
       const hue = ((frame*0.03) + obj.userData.baseHue) % 360;
-      obj.material.color.setHSL((hue/360)+0.02*Math.sin(frame*0.001), 0.8 - level*0.04, 0.46 + 0.06*Math.sin(frame*0.0009 + level));
+      obj.material.color.setHSL((hue/360) + 0.02*Math.sin(frame*0.001), 0.78 - lev*0.04, 0.44 + 0.06*Math.sin(frame*0.0009 + lev));
     }
   });
-  // snow updates and spawns
-  if (Math.random() < 0.45) seedSnowFromTips(3);
+  if (Math.random() < 0.45) seedSnowFromTips(0.02);
   if (Math.random() < 0.003) {
     const idx = Math.floor(Math.random()*tips.length);
-    snowSys.emit(tips[idx], Math.random()*360, 1.6 + Math.random()*1.4);
-    for (let i=0;i<8;i++) snowSys.emit(tips[idx], Math.random()*360, 0.9 + Math.random()*0.9);
+    snowSys.emit(tips[idx], Math.random()*360, 1.4 + Math.random()*1.8);
+    for (let i=0;i<6;i++) snowSys.emit(tips[idx], Math.random()*360, 0.8 + Math.random()*1.2);
   }
-  snowSys.step(Math.max(0.8, dt*60));
+  snowSys.step(Math.max(0.6, dt*60));
   frame++;
 }
 
-/* pack recorded dataURLs into zip and offer download */
 async function packZip(dataURLs) {
   const zip = new JSZip();
   const folder = zip.folder('frames');
@@ -541,30 +495,22 @@ async function packZip(dataURLs) {
     const base64 = dataURLs[i].replace(/^data:image\/png;base64,/, '');
     folder.file(`frame_${String(i).padStart(5,'0')}.png`, base64, {base64:true});
   }
-  statusEl.innerText = 'Status: compressing zip… (may take a while)';
-  const content = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
-  const url = URL.createObjectURL(content);
+  const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `golden_mean_frames_${Date.now()}.zip`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  a.href = url; a.download = `golden_mean_frames_${Date.now()}.zip`;
+  document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
   statusEl.innerText = 'Status: download started (zip)';
 }
 
-/* -----------------------------------------
-   Initialization: set UI defaults from passes
-   ----------------------------------------- */
+/* final setup values */
 document.getElementById('bloom').value = bloomPass.strength;
 document.getElementById('bloomR').value = bloomPass.radius;
 document.getElementById('bloomT').value = bloomPass.threshold;
 document.getElementById('fog').value = scene.fog.density;
 document.getElementById('complex').value = complexity;
-
-/* final tips in status */
-document.getElementById('status').innerText = 'Status: ready — press r to regenerate, Space to pause';
+statusEl.innerText = 'Status: ready — press r to regenerate, Space to pause';
 </script>
 </body>
 </html>
