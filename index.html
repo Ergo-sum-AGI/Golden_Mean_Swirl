@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Golden-Ratio Consciousness Field Spiral</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas });
+let w, h;
+
+function resize() {
+  w = innerWidth; h = innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+resize();
+addEventListener('resize', resize);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+camera.position.z = 50;
+
+const φ = (1 + Math.sqrt(5)) / 2; // Golden ratio ~1.618
+const goldenAngle = Math.PI * 2 / φ; // ~137.5 degrees in radians
+const eta = 0.809016994; // Anomalous dimension from paper
+const PhiStar = 1 / (4 * Math.PI * φ); // ~0.382 from paper
+
+// Material for branches
+const branchMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }); // Fatter lines
+
+// Recursive function for branching fractal tree/spiral
+function createBranch(parent, level, maxLevels, length, angleOffset, time) {
+  if (level > maxLevels) return;
+
+  const geometry = new THREE.BufferGeometry();
+  const vertices = [];
+  const numSegments = 20; // Smoother curves
+  for (let i = 0; i <= numSegments; i++) {
+    const t = i / numSegments;
+    const x = t * length * Math.cos(angleOffset + t * goldenAngle * eta); // Incorporate eta for twist
+    const y = t * length * Math.sin(angleOffset + t * goldenAngle * eta);
+    const z = t * length; // Grow in Z for 3D
+    vertices.push(x, y, z);
+  }
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+  const branch = new THREE.Line(geometry, branchMaterial.clone());
+  branch.position.copy(parent.position);
+  branch.rotation.copy(parent.rotation);
+  scene.add(branch);
+
+  // Branching: Create 2-3 child branches with golden angle spread
+  const childCount = Math.floor(2 + PhiStar * 3); // Influenced by PhiStar
+  for (let i = 0; i < childCount; i++) {
+    const child = new THREE.Object3D();
+    child.position.set(length * Math.cos(angleOffset), length * Math.sin(angleOffset), length);
+    child.rotation.y = i * goldenAngle + time * 0.01; // Swirling with time
+    parent.add(child); // Attach to end of current branch
+    createBranch(child, level + 1, maxLevels, length * (1 / φ), angleOffset + goldenAngle * i, time); // Shrink by 1/phi
+  }
+}
+
+// Root branch
+const root = new THREE.Object3D();
+scene.add(root);
+let maxLevels = 6; // Start with some depth
+
+let t = 0;
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Faster rotation and unfolding
+  root.rotation.y += 0.02; // Faster spin
+  camera.position.x = Math.sin(t * 0.005) * 60;
+  camera.position.y = Math.cos(t * 0.005) * 60;
+  camera.lookAt(scene.position);
+
+  // Color change in harmony with phi: qualia/thoughts
+  scene.traverse((obj) => {
+    if (obj.isLine) {
+      const hue = (t * 0.5 + obj.position.z * φ) % 360; // Harmony with phi
+      obj.material.color.setHSL(hue / 360, 1, 0.6 + 0.2 * Math.sin(t * eta));
+    }
+  });
+
+  // Unfolding: occasionally increase depth or add branches
+  if (t % 100 === 0) {
+    scene.remove(root);
+    root.children = []; // Reset for regeneration
+    createBranch(root, 0, maxLevels, 20, 0, t);
+    maxLevels += 0.1 * PhiStar; // Slowly unfold deeper
+  }
+
+  renderer.render(scene, camera);
+  t++;
+}
+createBranch(root, 0, maxLevels, 20, 0, t); // Initial creation
+animate();
+</script>
+</body>
+</html>
