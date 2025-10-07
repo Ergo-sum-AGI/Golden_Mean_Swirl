@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Golden Mean Swirl — Living Edition (GitHub Safe)</title>
+<title>Golden Mean Swirl — Living Edition</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   html,body{height:100%;margin:0;background:#000010;overflow:hidden;font-family:Inter,system-ui,monospace;color:#dff}
@@ -23,14 +23,8 @@
   hr{border:none;border-top:1px solid rgba(255,255,255,0.04);margin:8px 0}
 </style>
 
-<!-- Three + UMD helper scripts (r128) -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<!-- Three.js r128 from Cloudflare CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <!-- JSZip for packaging frames -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
@@ -71,7 +65,7 @@
 
 <script>
 /* ---------------------------
-   Renderer, Scene, Camera, Composer (safe ordering)
+   Renderer, Scene, Camera (simplified - no post-processing for now)
    --------------------------- */
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
@@ -86,17 +80,14 @@ scene.fog = new THREE.FogExp2(0x000010, 0.015);
 const camera = new THREE.PerspectiveCamera(60, W0/H0, 0.1, 2000);
 camera.position.set(0, 12, 110);
 
-const composer = new THREE.EffectComposer(renderer);
-const renderPass = new THREE.RenderPass(scene, camera);
-composer.addPass(renderPass);
-const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(W0, H0), 0.9, 0.6, 0.1);
-bloomPass.threshold = 0.12; bloomPass.strength = 0.9; bloomPass.radius = 0.9;
-composer.addPass(bloomPass);
+// Simulated bloom effect via material emissive values
+let bloomStrength = 0.9;
+let bloomRadius = 0.8;
+let bloomThreshold = 0.12;
 
 /* responsive */
 function onResize(w = window.innerWidth, h = window.innerHeight) {
   renderer.setSize(w, h);
-  composer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
@@ -348,8 +339,8 @@ function animate(now) {
       const lev = obj.userData.level || 0;
       const hue = ((frame*0.03) + obj.userData.baseHue) % 360;
       obj.material.color.setHSL((hue/360) + 0.02*Math.sin(frame*0.001), 0.78 - lev*0.04, 0.44 + 0.06*Math.sin(frame*0.0009 + lev));
-      // slight emissive pulsing
-      obj.material.emissiveIntensity = 0.8 + 0.28*Math.sin(frame*0.002 + lev);
+      // slight emissive pulsing (simulated bloom)
+      obj.material.emissiveIntensity = bloomStrength * (0.8 + 0.28*Math.sin(frame*0.002 + lev));
       // wobble geometry by tiny rotation
       obj.rotation.z = 0.002 * Math.sin(frame*0.0009 + lev*0.1);
     }
@@ -366,7 +357,7 @@ function animate(now) {
 
   scene.fog.density = parseFloat(document.getElementById('fog').value);
 
-  composer.render();
+  renderer.render(scene, camera);
 
   frame++;
 }
@@ -376,9 +367,9 @@ requestAnimationFrame(animate);
    UI bindings & shortcuts
    --------------------------- */
 const statusEl = document.getElementById('status');
-document.getElementById('bloom').addEventListener('input', e=>{ bloomPass.strength = parseFloat(e.target.value); statusEl.innerText = `Status: bloom ${bloomPass.strength.toFixed(2)}`; });
-document.getElementById('bloomR').addEventListener('input', e=>{ bloomPass.radius = parseFloat(e.target.value); statusEl.innerText = `Status: bloom radius ${bloomPass.radius.toFixed(2)}`; });
-document.getElementById('bloomT').addEventListener('input', e=>{ bloomPass.threshold = parseFloat(e.target.value); statusEl.innerText = `Status: bloom threshold ${bloomPass.threshold.toFixed(2)}`; });
+document.getElementById('bloom').addEventListener('input', e=>{ bloomStrength = parseFloat(e.target.value); statusEl.innerText = `Status: bloom ${bloomStrength.toFixed(2)}`; });
+document.getElementById('bloomR').addEventListener('input', e=>{ bloomRadius = parseFloat(e.target.value); statusEl.innerText = `Status: bloom radius ${bloomRadius.toFixed(2)}`; });
+document.getElementById('bloomT').addEventListener('input', e=>{ bloomThreshold = parseFloat(e.target.value); statusEl.innerText = `Status: bloom threshold ${bloomThreshold.toFixed(2)}`; });
 
 document.getElementById('fog').addEventListener('input', e=>{ scene.fog.density = parseFloat(e.target.value); statusEl.innerText = `Status: fog ${scene.fog.density.toFixed(3)}`; });
 
@@ -398,8 +389,8 @@ document.getElementById('pause').addEventListener('click', ()=>{
 });
 
 window.addEventListener('keydown', (ev)=>{
-  if (ev.key === 'b') bloomPass.strength = Math.max(0, bloomPass.strength - 0.08);
-  if (ev.key === 'B') bloomPass.strength = Math.min(3, bloomPass.strength + 0.08);
+  if (ev.key === 'b') bloomStrength = Math.max(0, bloomStrength - 0.08);
+  if (ev.key === 'B') bloomStrength = Math.min(3, bloomStrength + 0.08);
   if (ev.key === 'f') scene.fog.density = Math.max(0.0005, scene.fog.density - 0.002);
   if (ev.key === 'F') scene.fog.density = Math.min(0.2, scene.fog.density + 0.002);
   if (ev.key === 'r') { tips = createTree(root, complexity); statusEl.innerText = `Status: regenerated — tips ${tips.length}`; }
@@ -407,7 +398,7 @@ window.addEventListener('keydown', (ev)=>{
 });
 
 /* ---------------------------
-   Recording: client-side 1080p frames -> ZIP (JSZip)
+   Recording: client-side 1080p frames → ZIP (JSZip)
    --------------------------- */
 const startBtn = document.getElementById('startRec');
 const stopBtn = document.getElementById('stopRec');
@@ -434,12 +425,11 @@ async function startRecording() {
   const TARGET_W = 1920, TARGET_H = 1080;
   onResize(TARGET_W, TARGET_H);
   renderer.setPixelRatio(1);
-  composer.setSize(TARGET_W, TARGET_H);
 
   for (let f=0; f<total; f++) {
     // advance scene deterministic-ish
     updateForCaptureFrame(1000/fps);
-    composer.render();
+    renderer.render(scene, camera);
     // capture
     const data = renderer.domElement.toDataURL('image/png');
     recorded.push(data);
@@ -451,7 +441,6 @@ async function startRecording() {
   // restore
   onResize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  composer.setSize(window.innerWidth, window.innerHeight);
 
   statusEl.innerText = `Status: packing ${recorded.length} frames…`;
   await packZip(recorded);
@@ -505,9 +494,9 @@ async function packZip(dataURLs) {
 }
 
 /* final setup values */
-document.getElementById('bloom').value = bloomPass.strength;
-document.getElementById('bloomR').value = bloomPass.radius;
-document.getElementById('bloomT').value = bloomPass.threshold;
+document.getElementById('bloom').value = bloomStrength;
+document.getElementById('bloomR').value = bloomRadius;
+document.getElementById('bloomT').value = bloomThreshold;
 document.getElementById('fog').value = scene.fog.density;
 document.getElementById('complex').value = complexity;
 statusEl.innerText = 'Status: ready — press r to regenerate, Space to pause';
